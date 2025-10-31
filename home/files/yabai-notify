@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# usage: yabai-notify "<yabai-args>" "Optional message"
+YABAI_ARGS="$1"
+USER_MSG="$2"
+
+if [ -n "$YABAI_ARGS" ]; then
+  /usr/bin/env yabai -m $YABAI_ARGS || true
+fi
+
+layout="unknown"
+if command -v yabai >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+  space_json=$(/usr/bin/env yabai -m query --spaces --space) || space_json='{}'
+  layout=$(printf '%s' "$space_json" | jq -r '.layout // .type // "unknown"') || layout="unknown"
+  space_index=$(printf '%s' "$space_json" | jq -r '.index // "?"') || space_index="?"
+  space_label=$(printf '%s' "$space_json" | jq -r '.label // empty') || space_label=""
+  display_index=$(printf '%s' "$space_json" | jq -r '.display // "?"') || display_index="?"
+fi
+
+if [ -n "$USER_MSG" ]; then
+  if [ -n "$space_label" ]; then
+    msg="$USER_MSG — layout: $layout — space: $space_index ($space_label) display: $display_index"
+  else
+    msg="$USER_MSG — layout: $layout — space: $space_index display: $display_index"
+  fi
+else
+  if [ -n "$space_label" ]; then
+    msg="layout: $layout — space: $space_index ($space_label) display: $display_index"
+  else
+    msg="layout: $layout — space: $space_index display: $display_index"
+  fi
+fi
+
+# escape double quotes for osascript safely
+msg_esc=$(printf '%s' "$msg" | sed 's/"/\\"/g')
+title="yabai"
+/usr/bin/osascript -e "display notification \"$msg_esc\" with title \"$title\""

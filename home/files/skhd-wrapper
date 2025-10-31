@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Wrapper to invoke the skhd binary using an absolute path so launchd can
+# execute it regardless of PATH. This avoids EX_CONFIG/command-not-found when
+# launchd runs the agent.
+exec /etc/profiles/per-user/jcuzmar/bin/skhd "$@"
